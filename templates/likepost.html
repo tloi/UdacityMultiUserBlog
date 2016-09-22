@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form method="post">
+    <div class="post">
+        <div class="post-heading">
+            <div class="post-title">
+                {{p.subject}}
+            </div>
+            <div class="post-date">
+                {{p.created.strftime("%b %d, %Y")}}
+            </div>
+        </div>
+        <div class="post-content">
+            {{p._render_text | safe}}
+        </div>
+        <input type="Submit" value="Confirm Like">
+        <a href="/blog/{{p.key().id()}}">Cancel</a>
+    </div>
+    </form>
+    {% endblock %}

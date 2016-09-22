@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>delete post</h2>
+
+    <form method="post">
+        
+    <label>
+        <div>subject</div>
+        {{post.subject}}
+    </label>
+    <label>
+        <div>blog</div>
+        {{post.content | safe}}
+    </label>
+    
+    <input type="submit" value="Delete"> <a href="/blog/{{post.key().id()}}">Cancel</a>
+</form>
+{% endblock %}
