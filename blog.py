@@ -66,6 +66,9 @@ def render_post(response, post):
     response.out.write('<b>' + post.subject + '</b><br>')
     response.out.write(post.content)
 
+def render_comment(response, comment):
+    response.out.write(comment.content)
+
 class MainPage(BlogHandler):
   def get(self):
       self.redirect('blog')
@@ -129,6 +132,14 @@ def post_exist(post_id):
         return post
     else:
         return None
+    
+def comment_exist(comment_id):
+    key = db.Key.from_path('Comment', int(comment_id), parent=blog_key())
+    if key:
+        comment = db.get(key)
+        return comment
+    else:
+        return None    
 
 class Post(db.Model):
     like_count=db.IntegerProperty(default=0)
@@ -138,24 +149,130 @@ class Post(db.Model):
     created = db.DateTimeProperty(auto_now_add = True)
     created_by = db.TextProperty()
     last_modified = db.DateTimeProperty(auto_now = True)
-    
+
     def render(self):        
         self._render_text = self.content.replace('\n', '<br>')
         return render_str("post.html", p = self)
 
+    def renderview(self):        
+        self._render_text = self.content.replace('\n', '<br>')
+        return render_str("postview.html", p = self)
+
+class Comment(db.Model):
+    post_fk=db.ReferenceProperty(Post)        
+    content = db.TextProperty(required = True)
+    created = db.DateTimeProperty(auto_now_add = True)
+    created_by = db.TextProperty()
+    last_modified = db.DateTimeProperty(auto_now = True)
+    
+    def render(self):        
+        self._render_text = self.content.replace('\n', '<br>')
+        return render_str("comment.html", p = self)
+
+class NewComment(BlogHandler):
+    def get(self,post_id):
+        if self.user:
+            post=post_exist(post_id)
+            if post:
+                self.render("newcomment.html", p=post)
+            else:
+                self.render("errorpost.html", error="Post does not exist")
+        else:
+            self.redirect("/login")
+
+    def post(self,post_id):
+        if not self.user:
+            self.redirect('/blog')
+
+        post=post_exist(post_id)
+        if post:
+            content = self.request.get('content')
+            if content:
+                c = Comment(parent = blog_key(), post_fk = post, content = content, created_by=self.user.name)
+                c.put()
+                self.redirect('/blog/%s' % str(post_id))
+            else:
+                error = "comment, please!"
+                self.render("newcomment.html", p=post, error=error)
+        else:
+            self.render("errorpost.html", error="Post does not exist")
+
+class EditComment(BlogHandler):
+    def get(self, comment_id):
+        if self.user:
+            comment= comment_exist(comment_id)            
+            if comment:
+                if self.user.name!=comment.created_by:
+                    error = "You cannot edit other user's comment"
+                    self.render("errorcomment.html", c=comment, error=error)
+                else:
+                    self.render("editcomment.html", comment=comment)
+            else:
+                self.render("/blog")
+        else:
+            self.redirect("/login")
+
+    def post(self,comment_id):
+        comment= comment_exist(comment_id)       
+        if not self.user:
+            self.redirect('/blog')
+        elif self.user.name!=comment.created_by:
+            error = "You cannot edit other user's comment"
+            self.render("editpost.html", comment=comment, error=error)
+        else:
+            post_id=comment.post_fk.key().id()
+            comment.content = self.request.get('content')
+        
+            if comment.content:            
+                comment.put()
+                self.redirect('/blog/%s' % post_id)
+            else:
+                error = "comment, please!"
+                self.render("editcomment.html", comment=comment, error=error)
+
+class DeleteComment(BlogHandler):
+    def get(self, comment_id):
+        if self.user:
+            comment=comment_exist(comment_id)
+            if comment:
+                if self.user.name!=comment.created_by:
+                    error = "You cannot delete other user's comment"
+                    self.render("errorcomment.html", c=comment, error=error)
+                else:
+                    self.render("deletecomment.html", comment=comment)
+            else:
+                self.render("errorcomment.html",error="comment does not exist")
+        else:
+            self.redirect("/login")
+
+    def post(self,comment_id):
+        comment = comment_exist(comment_id)
+        post_id=comment.post_fk.key().id()
+        if not self.user:
+            self.redirect('/blog')
+        elif not comment.created_by:
+            comment.delete()
+            self.redirect('/blog/%s' % post_id)       
+        elif self.user.name!=comment.created_by:
+            self.render("deletecomment.html", comment=comment,error="You cannot delete other user's comment")
+        else:        
+            comment.delete()
+            self.redirect('/blog/%s' % post_id)
+
 class BlogFront(BlogHandler):
     def get(self):        
-        posts = greetings = Post.all().order('-created')
+        posts = Post.all().order('-created')        
         self.render('front.html', posts = posts)
 
 class PostPage(BlogHandler):
     def get(self, post_id):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
+        comments=Comment.all().order('-created')
         if not post:
             self.error(404)
             return
-        self.render("permalink.html", post = post)
+        self.render("permalink.html", post = post, comments=comments)
 
 class NewPost(BlogHandler):
     def get(self):
@@ -182,9 +299,13 @@ class NewPost(BlogHandler):
 class EditPost(BlogHandler):
     def get(self, post_id):
         if self.user:
-            post= post_exist(post_id)
+            post= post_exist(post_id)            
             if post:
-                self.render("editpost.html", post=post)
+                if self.user.name!=post.created_by:
+                    error = "You cannot edit other user's Post"
+                    self.render("errorpost.html", p=post, error=error)
+                else:
+                    self.render("editpost.html", post=post)
             else:
                 self.render("/blog")
         else:
@@ -213,7 +334,11 @@ class LikePost(BlogHandler):
         if self.user:
             p=post_exist(post_id)
             if p:
-                self.render("likepost.html", p=p)
+                if self.user.name==p.created_by:
+                    error = "You cannot Like your own Post"
+                    self.render("errorpost.html", p=p, error=error)
+                else:
+                    self.render("likepost.html", p=p)
             else:
                 self.redirect("/blog")
         else:
@@ -222,34 +347,56 @@ class LikePost(BlogHandler):
     def post(self,post_id):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
-        post.like_count+=1
-        post.put()
-        self.redirect('/blog/%s' % post_id)
+        if post:
+            if self.user.name==post.created_by:
+                error = "You cannot Like your own Post"
+                self.render("errorpost.html", p=post, error=error)
+            else:
+                post.like_count+=1
+                post.put()
+                self.redirect('/blog/%s' % post_id)
+        else:
+            self.redirect("/blog")
+        
             
 class UnlikePost(BlogHandler):
     def get(self, post_id):
         if self.user:
             p=post_exist(post_id)
             if p:
-                self.render("unlikepost.html", p=p)
+                if self.user.name==p.created_by:
+                    error = "You cannot Unlike your own Post"
+                    self.render("errorpost.html", p=p, error=error)
+                else:
+                    self.render("unlikepost.html", p=p)
             else:
                 self.redirect("/blog")
         else:
             self.redirect("/login")
 
-    def post(self,post_id):
-        
-        post = post_exist
-        post.unlike_count+=1
-        post.put()
-        self.redirect('/blog/%s' % post_id)             
+    def post(self,post_id):        
+        post = post_exist(post_id)
+        if post:
+            if self.user.name==post.created_by:
+                error = "You cannot unlike your own Post"
+                self.render("errorpost.html", p=post, error=error)
+            else:
+                post.unlike_count+=1
+                post.put()
+                self.redirect('/blog/%s' % post_id)             
+        else:
+            self.redirect("/blog")
           
 class DeletePost(BlogHandler):
     def get(self, post_id):
         if self.user:
             post=post_exist(post_id)
             if post:
-                self.render("deletepost.html", post=post)
+                if self.user.name!=post.created_by:
+                    error = "You cannot delete other user's Post"
+                    self.render("errorpost.html", p=post, error=error)
+                else:
+                    self.render("deletepost.html", post=post)
             else:
                 self.redirect("/blog")
         else:
@@ -392,6 +539,9 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/blog/?', BlogFront),
                                ('/blog/([0-9]+)', PostPage),
                                ('/blog/newpost', NewPost),
+                               ('/blog/newcomment/([0-9]+)', NewComment),
+                               ('/blog/editcomment/([0-9]+)', EditComment),
+                               ('/blog/deletecomment/([0-9]+)', DeleteComment),
                                ('/blog/editpost/([0-9]+)', EditPost),
                                ('/blog/deletepost/([0-9]+)', DeletePost),
                                ('/blog/likepost/([0-9]+)', LikePost),

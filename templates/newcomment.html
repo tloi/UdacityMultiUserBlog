@@ -1,3 +1,7 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>new comment</h2>
 <div class="post">
     <div class="post-heading">
         <div class="post-title">
@@ -13,7 +17,15 @@
     <div class="post-content">
         {{p._render_text | safe}}
     </div>
-    <a href="/blog/likepost/{{p.key().id()}}">({{p.like_count}}) Likes</a> <a href="/blog/unlikepost/{{p.key().id()}}">({{p.unlike_count}}) Unlike</a><br /><br />
-    <a href="/blog/{{p.key().id()}}">View</a> <a href="/blog/editpost/{{p.key().id()}}">Edit</a> <a href="/blog/deletepost/{{p.key().id()}}">Delete</a><br /><br />
-    
-</div>
+ </div>
+
+    <form method="post">
+        
+    <label>
+        <div>comment</div>
+        <textarea name="content">{{content}}</textarea>
+    </label>
+    <div class="error">{{error}}</div>
+    <input type="submit"> <a href="/blog">Cancel</a>
+</form>
+{% endblock %}

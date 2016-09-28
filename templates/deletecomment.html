@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>delete comment</h2>
+
+    <form method="post">
+        
+    
+    <label>
+        <div>blog</div>
+        {{comment.content | safe}}
+    </label>
+    
+    <input type="submit" value="Delete"> <a href="/blog/{{comment.post_fk.key().id()}}">Cancel</a>
+</form>
+{% endblock %}

@@ -1,5 +1,20 @@
 {% extends "base.html" %}
 
 {% block content %}
-  {{post.render() | safe}}
+  {{post.renderview() | safe}}
+<a href="/blog/newcomment/{{post.key().id()}}">New Comment</a>
+<div class="sub-work col-md-12">
+    <hr />
+    {% for c in comments %}
+    <blockquote>
+        <p>{{ c.content }}</p>        
+        <footer>
+            {{ c.created_by }}
+            <a class="comment-delete btn btn-danger pull-right" href="/blog/deletecomment/{{c.key().id()}}">Delete</a>
+            <a class="comment-edit btn btn-primary pull-right" href="/blog/editcomment/{{c.key().id()}}">Edit</a>
+        </footer>
+        <hr />
+    </blockquote>
+    {% endfor %}
+</div>
 {% endblock %}
