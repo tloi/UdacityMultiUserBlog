@@ -1,9 +1,16 @@
+from bloghandler import BlogHandler
+from helpers.render import post_exist
+
 class EditPost(BlogHandler):
     def get(self, post_id):
         if self.user:
-            post= post_exist(post_id)
+            post= post_exist(post_id)            
             if post:
-                self.render("editpost.html", post=post)
+                if self.user.name!=post.created_by:
+                    error = "You cannot edit other user's Post"
+                    self.render("errorpost.html", p=post, error=error)
+                else:
+                    self.render("editpost.html", post=post)
             else:
                 self.render("/blog")
         else:

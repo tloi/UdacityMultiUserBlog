@@ -1,9 +1,11 @@
+from bloghandler import BlogHandler
+
 class NewPost(BlogHandler):
     def get(self):
         if self.user:
             self.render("newpost.html")
         else:
-            self.redirect("/login",error="login")
+            self.redirect("/login")
 
     def post(self):
         if not self.user:

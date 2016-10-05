@@ -14,8 +14,8 @@
         <div class="post-content">
             {{p._render_text | safe}}
         </div>
-        <input type="radio" value="Like" name="voteresult" checked />Like
-        <input type="radio" value="Unlike" name="voteresult"  />Unlike
+        <input type="radio" value="Like" name="vote" />Like
+        <input type="radio" value="Unlike" name="vote" />Unlike
         <div class="error">{{error}}</div>
         <input type="Submit" value="Submit Vote">
         <a href="/blog/{{p.key().id()}}">Cancel</a>

@@ -12,8 +12,7 @@
     </div>
     <div class="post-content">
         {{p._render_text | safe}}
-    </div>
-    <a href="/blog/likepost/{{p.key().id()}}">({{p.like_count}}) Likes</a> <a href="/blog/unlikepost/{{p.key().id()}}">({{p.unlike_count}}) Unlike</a><br /><br />
+    </div>    
     <a href="/blog/{{p.key().id()}}">View</a> <a href="/blog/editpost/{{p.key().id()}}">Edit</a> <a href="/blog/deletepost/{{p.key().id()}}">Delete</a><br /><br />
-    
+
 </div>

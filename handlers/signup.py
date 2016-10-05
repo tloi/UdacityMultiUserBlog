@@ -1,3 +1,7 @@
+from bloghandler import BlogHandler
+from helpers.render import valid_username, valid_password, valid_email
+from models.user import User
+
 class Signup(BlogHandler):
     def get(self):
         self.render("signup-form.html")
