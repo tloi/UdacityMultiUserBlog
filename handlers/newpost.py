@@ -1,4 +1,6 @@
 from bloghandler import BlogHandler
+from models.post import Post
+from helpers.render import blog_key
 
 class NewPost(BlogHandler):
     def get(self):
